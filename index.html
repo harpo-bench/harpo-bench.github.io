@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HARPO: Hierarchical Agentic Reasoning for User-Aligned Conversational Recommendation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --card:#rgba(255,255,255,0.97);--text:#0f172a;--muted:#475569;--border:rgba(15,23,42,0.10);
+      --accent:#2dd4bf;--accent2:#60a5fa;--accent3:#a78bfa;
+      --shadow:0 12px 40px rgba(2,6,23,0.12);--radius:16px;
+      --mono:"IBM Plex Mono",monospace;--sans:"DM Sans",ui-sans-serif,system-ui,sans-serif;
+      --surface2:#f9fafb;--legacy-border:#e5e7eb;
+      --blue:#2563eb;--blue-bg:#dbeafe;--green:#059669;--green-bg:#d1fae5;
+      --amber:#d97706;--amber-bg:#fef3c7;--purple:#7c3aed;--purple-bg:#ede9fe;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth}
+    body{font-family:var(--sans);color:var(--text);background:#f6f8fb;line-height:1.6}
+    a{color:var(--blue);text-decoration:none}
+    a:hover{text-decoration:underline}
+
+    /* HERO */
+    header.hero{
+      position:relative;overflow:hidden;padding:56px 20px 38px;
+      background:radial-gradient(1200px 600px at 20% 10%,rgba(45,212,191,.25),transparent 55%),
+        radial-gradient(900px 500px at 85% 20%,rgba(96,165,250,.22),transparent 55%),
+        radial-gradient(900px 600px at 60% 110%,rgba(167,139,250,.18),transparent 60%),
+        linear-gradient(180deg,#0b1220 0%,#0b1220 55%,#0f172a 100%);
+      color:#fff;text-align:center
+    }
+    .hero-inner{max-width:1080px;margin:0 auto}
+    .hero-badge{display:inline-block;padding:6px 16px;border-radius:999px;font-size:12px;font-weight:700;margin-bottom:20px;background:rgba(45,212,191,.18);border:1px solid rgba(45,212,191,.35);color:#2dd4bf;letter-spacing:.06em;text-transform:uppercase}
+    .hero h1{margin:0 0 14px;font-size:clamp(1.6rem,3.2vw,2.5rem);line-height:1.18;letter-spacing:-.025em;font-weight:700}
+    .hero .subtitle{margin:0 auto 22px;max-width:780px;color:rgba(255,255,255,.78);font-size:1.05rem}
+    .hero .authors{margin:16px auto 4px;color:rgba(255,255,255,.92);font-size:1rem;font-weight:600}
+    .hero .affils{margin:6px auto 0;color:rgba(255,255,255,.68);font-size:.92rem}
+    .btn-row{margin-top:24px;display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 18px;border-radius:999px;font-weight:700;font-size:.93rem;text-decoration:none;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.08);color:#fff;cursor:pointer;transition:transform 120ms ease,background 120ms ease;backdrop-filter:blur(10px)}
+    .btn:hover{transform:translateY(-1px);background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.30);text-decoration:none}
+    .btn.primary{border:none;background:linear-gradient(135deg,var(--accent) 0%,var(--accent2) 55%,var(--accent3) 100%);color:#07121f}
+    .icon{width:17px;height:17px;display:inline-block;vertical-align:middle;fill:currentColor}
+
+    /* NAV */
+    nav.topnav{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.88);backdrop-filter:blur(12px);border-bottom:1px solid rgba(15,23,42,.08)}
+    .nav-inner{max-width:1200px;margin:0 auto;padding:10px 20px;display:flex;gap:4px;justify-content:center;flex-wrap:wrap;align-items:center}
+    .nav-brand{font-weight:700;font-size:13px;color:#0f172a;margin-right:auto;white-space:nowrap}
+    nav a{text-decoration:none;color:#0f172a;font-weight:600;font-size:.88rem;padding:6px 10px;border-radius:10px;transition:background 120ms ease,color 120ms ease}
+    nav a:hover{background:rgba(15,23,42,.06)}
+    nav a.active{color:#2563eb}
+
+    /* LAYOUT */
+    .two-col{display:grid;grid-template-columns:1fr 430px;gap:22px;margin:24px auto;max-width:1200px;padding:0 20px;align-items:start}
+    @media(max-width:960px){.two-col{grid-template-columns:1fr}}
+    .full-section{max-width:1200px;margin:0 auto 22px;padding:0 20px}
+    .left-col,.right-col{display:flex;flex-direction:column;gap:22px}
+
+    /* CARD */
+    .card{background:rgba(255,255,255,.97);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px}
+    .card h2{margin:0 0 10px;letter-spacing:-.01em}
+    .section-tag{display:inline-block;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;background:linear-gradient(135deg,rgba(45,212,191,.15),rgba(96,165,250,.10));border:1px solid rgba(45,212,191,.25);color:#0f172a}
+
+    /* ABSTRACT */
+    .abstract-box{position:relative;padding:16px 16px 16px 20px;border-radius:14px;background:linear-gradient(180deg,rgba(45,212,191,.07),rgba(96,165,250,.05));border:1px solid rgba(45,212,191,.20);color:#0f172a;font-size:.96rem;line-height:1.75;margin-top:14px}
+    .abstract-box::before{content:"";position:absolute;left:0;top:14px;bottom:14px;width:4px;border-radius:6px;background:linear-gradient(180deg,var(--accent),var(--accent2))}
+    .abstract-box p+p{margin-top:12px}
+
+    /* FIGURE */
+    .figure-card{margin-top:18px;padding:14px;border-radius:14px;background:rgba(248,250,252,.95);border:1px solid rgba(15,23,42,.10)}
+    .figure-card img{width:100%;height:auto;display:block;border-radius:10px;border:1px solid rgba(15,23,42,.08)}
+    .figure-card figcaption{margin-top:10px;font-size:.89rem;color:var(--muted);line-height:1.55}
+
+    /* COMPONENTS */
+    .component-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:14px}
+    .component-card{background:rgba(248,250,252,.92);padding:15px;border-radius:14px;border:1px solid rgba(15,23,42,.10);transition:transform 140ms ease,border-color 140ms ease}
+    .component-card:hover{transform:translateY(-2px);border-color:rgba(45,212,191,.35)}
+    .component-card-header{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+    .component-icon{font-size:20px;width:36px;height:36px;display:flex;align-items:center;justify-content:center}
+    .component-card-name{font-weight:700;font-size:14px}
+    .component-card-desc{font-size:12.5px;color:var(--muted);line-height:1.6}
+
+    /* EVAL METRICS */
+    .metrics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:11px;margin-top:14px}
+    .metric-card{padding:13px;border-radius:12px;border:1px solid rgba(15,23,42,.10);background:#fff}
+    .metric-card.pm{border-left:3px solid var(--accent)}
+    .metric-card.sm{border-left:3px solid rgba(15,23,42,.18)}
+    .metric-type{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:4px}
+    .metric-type.ua{color:#059669}.metric-type.hm{color:#7c3aed}
+    .metric-name{font-weight:700;font-size:.94rem;margin-bottom:5px}
+    .metric-desc{font-size:11.5px;color:var(--muted);line-height:1.5}
+
+    /* RESULTS TABLE */
+    .dataset-tabs{display:flex;gap:1rem;margin-bottom:1.5rem;border-bottom:1px solid var(--legacy-border)}
+    .dataset-tab{padding:.6rem 0;border-bottom:2px solid transparent;font-weight:600;font-size:14px;cursor:pointer;color:var(--muted);transition:all .2s}
+    .dataset-tab:hover{color:var(--text)}
+    .dataset-tab.active{color:var(--blue);border-bottom-color:var(--blue)}
+    .results-table-wrap{overflow-x:auto;border:1px solid var(--legacy-border);border-radius:10px}
+    table.results-table{width:100%;border-collapse:collapse;font-size:13px}
+    .results-table thead{background:var(--surface2)}
+    .results-table th{padding:.75rem .9rem;text-align:left;font-weight:600;color:var(--text);border-bottom:1px solid var(--legacy-border);white-space:nowrap}
+    .results-table td{padding:.7rem .9rem;border-bottom:1px solid var(--legacy-border);white-space:nowrap}
+    .results-table tbody tr:hover{background:var(--surface2)}
+    .results-table tr.best{background:#fef9e7}
+    .model-name-cell{display:flex;align-items:center;gap:7px;font-weight:500;min-width:100px}
+    .model-tag{padding:2px 6px;border-radius:3px;font-size:10px;font-weight:700;white-space:nowrap}
+    .tag-ours{background:var(--blue-bg);color:var(--blue)}
+    .tag-gpt{background:var(--green-bg);color:var(--green)}
+    .tag-agent{background:var(--amber-bg);color:var(--amber)}
+    .tag-open{background:var(--purple-bg);color:var(--purple)}
+
+    /* LEADERBOARD */
+    .lb-dataset-tabs{display:flex;gap:0;border-bottom:1px solid var(--legacy-border);margin-bottom:10px}
+    .lb-ds-tab{padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;transition:all 120ms}
+    .lb-ds-tab:hover{color:var(--text)}
+    .lb-ds-tab.active{color:var(--blue);border-bottom-color:var(--blue)}
+    .lb-controls{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
+    .lb-filter-row{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+    .lb-filter-label{font-size:11px;font-weight:600;color:var(--muted)}
+    .lb-filter-btn{padding:4px 10px;border-radius:999px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid rgba(15,23,42,.12);background:#fff;color:var(--muted);transition:all 120ms}
+    .lb-filter-btn.af{background:#0f172a;border-color:#0f172a;color:#fff}
+    .lb-filter-btn.gf{background:var(--green-bg);border-color:var(--green);color:var(--green)}
+    .lb-filter-btn.of{background:var(--purple-bg);border-color:var(--purple);color:var(--purple)}
+    .lb-filter-btn.ag{background:var(--amber-bg);border-color:var(--amber);color:var(--amber)}
+    .lb-metric-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+    .lb-tab{padding:4px 10px;border-radius:999px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid rgba(15,23,42,.12);background:#fff;color:var(--muted);transition:all 120ms}
+    .lb-tab.active{background:linear-gradient(135deg,rgba(45,212,191,.18),rgba(96,165,250,.12));border-color:rgba(45,212,191,.40);color:#0f172a}
+    .lb-search{flex:1;min-width:100px;max-width:180px;padding:4px 10px;border-radius:8px;border:1px solid rgba(15,23,42,.14);font-size:12px;font-family:var(--sans);outline:none}
+    .lb-search:focus{border-color:rgba(45,212,191,.45)}
+    .lb-note{font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.5}
+    .lb-table-wrap{overflow-x:auto}
+    table.lb-table{width:100%;border-collapse:collapse;font-size:12px}
+    .lb-table thead th{padding:7px 8px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:1px solid rgba(15,23,42,.10);white-space:nowrap;cursor:pointer;user-select:none}
+    .lb-table thead th:hover{color:var(--blue)}
+    .lb-table thead th.sort-desc::after{content:" ↓"}
+    .lb-table thead th.sort-asc::after{content:" ↑"}
+    .lb-table tbody td{padding:7px 8px;border-bottom:1px solid rgba(15,23,42,.06);vertical-align:middle}
+    .lb-table tbody tr:hover{background:rgba(45,212,191,.04)}
+    .lb-table tr.lb-gold{background:rgba(255,215,0,.09)}
+    .lb-rank{font-weight:800;font-size:13px;text-align:center}
+    .lr1{color:#d97706}.lr2{color:#64748b}.lr3{color:#b45309}
+    .lb-method{font-weight:600;line-height:1.3;font-size:12.5px}
+    .lb-team{font-size:10px;color:var(--muted)}
+    .bar-wrap{display:flex;align-items:center;gap:5px}
+    .bar{height:5px;border-radius:99px;flex-shrink:0}
+    .bar.s{background:#2563eb}.bar.e{background:#7c3aed}.bar.n{background:#059669}.bar.h{background:#d97706}
+    .lb-val{font-size:11.5px;font-weight:700;white-space:nowrap}
+    .lb-ov{font-weight:800;font-size:12.5px;color:var(--text);text-align:right}
+    .lb-empty{text-align:center;padding:28px;color:var(--muted);font-size:13px}
+
+    /* SUBMIT */
+    .submit-panel{margin-top:14px;border:1px solid rgba(45,212,191,.22);border-radius:14px;background:linear-gradient(180deg,rgba(45,212,191,.06),rgba(96,165,250,.04));padding:15px}
+    .submit-panel h3{margin:0 0 5px;font-size:.97rem}
+    .submit-panel .sub{font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.5}
+    .json-area{width:100%;min-height:110px;font-family:var(--mono);font-size:11px;border:1px solid rgba(15,23,42,.14);border-radius:10px;padding:10px 12px;background:#0b1220;color:#e2e8f0;resize:vertical;outline:none;line-height:1.55}
+    .json-area:focus{border-color:rgba(45,212,191,.45)}
+    .submit-row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center}
+    .submit-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:10px;font-weight:700;font-size:12.5px;cursor:pointer;border:none;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#07121f;transition:transform 120ms,filter 120ms}
+    .submit-btn:hover{transform:translateY(-1px);filter:brightness(1.04)}
+    .submit-btn:disabled{opacity:.6;cursor:not-allowed;transform:none}
+    .submit-status{font-size:11.5px;font-weight:600;padding:5px 10px;border-radius:8px;display:none}
+    .submit-status.success{display:inline-block;background:var(--green-bg);color:var(--green)}
+    .submit-status.error{display:inline-block;background:#fee2e2;color:#dc2626}
+    .submit-status.loading{display:inline-block;background:var(--blue-bg);color:var(--blue)}
+    .json-schema{margin-top:9px;padding:9px 12px;background:rgba(15,23,42,.04);border-radius:8px;border:1px solid rgba(15,23,42,.08)}
+    .json-schema summary{font-size:11.5px;font-weight:700;cursor:pointer;color:var(--muted)}
+    .json-schema pre{margin-top:8px;font-family:var(--mono);font-size:10.5px;color:var(--muted);line-height:1.55;white-space:pre-wrap}
+
+    /* CITATION */
+    .cite-box{margin:0;padding:15px;border-radius:12px;background:#0b1220;color:#e5e7eb;overflow:auto;border:1px solid rgba(255,255,255,.08);font-size:.91rem;line-height:1.6;font-family:var(--mono)}
+    .cite-actions{margin-top:10px;display:flex;align-items:center;gap:10px}
+    .btn-copy{padding:8px 14px;border-radius:10px;border:1px solid rgba(15,23,42,.12);background:linear-gradient(180deg,rgba(45,212,191,.16),rgba(96,165,250,.10));font-weight:700;font-size:13px;cursor:pointer}
+    .btn-copy:hover{filter:brightness(.97)}
+    .copy-ok{color:var(--muted);font-weight:700;font-size:13px}
+
+    /* CLOSING */
+    .closing{margin:22px auto;max-width:900px;padding:54px 18px;border-radius:18px;background:radial-gradient(900px 380px at 50% 35%,rgba(45,212,191,.18),transparent 60%),radial-gradient(900px 380px at 50% 75%,rgba(96,165,250,.14),transparent 60%),linear-gradient(180deg,#0b1020 0%,#070a14 100%);border:1px solid rgba(255,255,255,.08);text-align:center;color:#e5e7eb}
+    .closing-inner{max-width:860px;margin:0 auto}
+    .arxiv-btn{display:inline-flex;align-items:center;justify-content:center;padding:12px 28px;border-radius:14px;font-weight:800;text-decoration:none;color:#0b1020;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 14px 30px rgba(0,0,0,.30);transition:transform 140ms ease,filter 140ms ease;gap:8px}
+    .arxiv-btn:hover{text-decoration:none;transform:translateY(-2px);filter:brightness(1.05)}
+    .closing-quote{margin:20px auto 12px;max-width:760px;font-size:1.05rem;line-height:1.6;color:rgba(229,231,235,.90)}
+    .closing-foot{margin-top:14px;font-size:.90rem;color:rgba(229,231,235,.55)}
+    .muted{color:var(--muted)}
+    @media(max-width:520px){header.hero{padding:40px 14px 28px}.two-col,.full-section{padding:0 12px}}
+  </style>
+</head>
+<body>
+
+<!-- ═══ HERO ══════════════════════════════════════════ -->
+<header class="hero">
+  <div class="hero-inner">
+    <div class="hero-badge">ACL 2026 · Main Conference</div>
+    <h1>HARPO: Hierarchical Agentic Reasoning for<br>User-Aligned Conversational Recommendation</h1>
+    <p class="subtitle">An agentic framework that combines deliberative reasoning with hierarchical preference optimization for high-quality, user-aligned recommendations.</p>
+    <div class="authors">Subham Raj<sup>1</sup>, Aman Vaibhav Jha<sup>1</sup>, Mayank Anand<sup>2</sup>, Sriparna Saha<sup>1</sup></div>
+    <div class="affils">IIT Patna<sup>1</sup> &nbsp;·&nbsp; IIIT Allahabad<sup>2</sup></div>
+    <div class="btn-row">
+      <a class="btn primary" href="https://github.com/harpo-bench/harpo" target="_blank" rel="noopener">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.77.6-3.35-1.16-3.35-1.16-.45-1.14-1.1-1.44-1.1-1.44-.9-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.9 1.53 2.36 1.09 2.94.83.09-.65.35-1.09.63-1.34-2.21-.25-4.54-1.1-4.54-4.9 0-1.08.39-1.96 1.03-2.65-.1-.26-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02A9.5 9.5 0 0 1 12 6.8c.85 0 1.71.11 2.51.33 1.9-1.29 2.75-1.02 2.75-1.02.55 1.37.2 2.38.1 2.64.64.69 1.03 1.57 1.03 2.65 0 3.81-2.33 4.65-4.55 4.9.36.31.68.92.68 1.86v2.76c0 .26.18.57.69.48A10 10 0 0 0 12 2z"/></svg>
+        Code
+      </a>
+      <a class="btn" href="#citation">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M7.2 17h3.2V9H6v6.8c0 .66.54 1.2 1.2 1.2zm10.8 0H21V9h-4.2v6.8c0 .66.54 1.2 1.2 1.2z"/></svg>
+        Cite This Work
+      </a>
+      <a class="btn" href="./8834_HARPO_Hierarchical_Agenti.pdf" target="_blank">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm0 2.5L19.5 10H14V4.5zM7 13h10v2H7v-2zm0 4h10v2H7v-2zM7 9h5v2H7V9z"/></svg>
+        Read Paper (PDF)
+      </a>
+      <a class="btn" href="#leaderboard">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M16 11V3H8v6H2v12h20V11h-6zm-6-6h4v14h-4V5zm-6 6h4v8H4v-8zm14 8h-4v-6h4v6z"/></svg>
+        Leaderboard
+      </a>
+    </div>
+  </div>
+</header>
+
+<!-- ═══ NAV ══════════════════════════════════════════ -->
+<nav class="topnav">
+  <div class="nav-inner">
+    <span class="nav-brand">HARPO</span>
+    <a href="#overview" class="active">Overview</a>
+    <a href="#framework">Framework</a>
+    <a href="#metrics">Metrics</a>
+    <a href="#results">Results</a>
+    <a href="#leaderboard">Leaderboard</a>
+    <a href="#citation">Citation</a>
+    <a href="https://github.com/harpo-bench/harpo" target="_blank">GitHub ↗</a>
+  </div>
+</nav>
+
+<!-- ═══ TWO-COLUMN ════════════════════════════════════ -->
+<div class="two-col">
+
+  <!-- LEFT -->
+  <div class="left-col">
+
+    <!-- Overview -->
+    <div class="card" id="overview">
+      <span class="section-tag">Overview</span>
+      <h2>The Problem &amp; Solution</h2>
+      <p class="muted" style="font-size:.96rem;line-height:1.7;">Conversational recommender systems are often trained and evaluated using proxy metrics (Recall@K, BLEU) that weakly reflect true user-aligned recommendation quality. HARPO reframes conversational recommendation as a structured decision-making problem, explicitly optimizing for user satisfaction, relevance, diversity, and engagement.</p>
+      <div class="abstract-box">
+        <p><strong>Abstract:</strong> Conversational recommender systems (CRSs) operate under incremental preference revelation, requiring systems to make recommendation decisions under uncertainty. While recent approaches, particularly those built on large language models, achieve strong performance on standard proxy metrics such as Recall@K and BLEU, they often fail to deliver high-quality, user-aligned recommendations in practice. This gap arises because existing methods primarily optimize for intermediate objectives like retrieval accuracy, fluent generation, or tool invocation, rather than recommendation quality itself.</p>
+        <p>HARPO integrates: (i) <strong>CHARM</strong> — hierarchical preference learning that decomposes recommendation quality into interpretable dimensions (relevance, diversity, predicted user satisfaction, and engagement) and learns context-dependent weights; (ii) <strong>STAR</strong> — deliberative tree-search reasoning guided by a learned value network; (iii) <strong>BRIDGE</strong> — domain-agnostic reasoning abstractions enabling cross-domain transfer; and (iv) <strong>MAVEN</strong> — multi-agent refinement through collaborative critique.</p>
+      </div>
+
+      <!-- Architecture Figure -->
+      <div class="figure-card">
+        <img src="figures/Quantum_CRS.png" alt="Overall architecture of the HARPO framework"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
+        <div style="display:none;align-items:center;justify-content:center;min-height:160px;border-radius:10px;background:rgba(45,212,191,.06);border:1px dashed rgba(45,212,191,.3);color:var(--muted);font-size:13px;text-align:center;padding:20px;line-height:1.6;">
+          📐 Place <code style="font-family:var(--mono);background:rgba(15,23,42,.06);padding:2px 5px;border-radius:3px;">figures/Quantum_CRS.png</code> in the same directory to display the architecture diagram.
+        </div>
+        <figcaption>
+          <strong>Figure 2:</strong> Overall architecture of the HARPO framework. The model integrates four components: <strong>STAR</strong> for structured agentic reasoning, <strong>CHARM</strong> for hierarchical preference optimization, <strong>BRIDGE</strong> for cross-domain transfer, and <strong>MAVEN</strong> for multi-agent refinement, all built on a shared language model backbone.
+        </figcaption>
+      </div>
+    </div>
+
+    <!-- Framework -->
+    <div class="card" id="framework">
+      <span class="section-tag">Architecture</span>
+      <h2>Framework <span style="margin-left:8px;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;background:rgba(15,23,42,.07);color:var(--muted);">4 Components</span></h2>
+      <p class="muted" style="font-size:.94rem;margin-top:6px;">HARPO integrates four tightly coupled modules built on a shared language model backbone (<code style="font-family:var(--mono);font-size:.86em;background:rgba(15,23,42,.06);padding:2px 5px;border-radius:4px;">DeepSeek-R1-Distill-Qwen-7B</code>).</p>
+      <div class="component-grid">
+        <div class="component-card">
+          <div class="component-card-header"><div class="component-icon">🌳</div><div class="component-card-name">STAR</div></div>
+          <p class="component-card-desc"><strong>Structured Tree-of-Thought Agentic Reasoning</strong><br/>Beam search over structured reasoning states guided by a learned value network that predicts multi-dimensional recommendation quality rather than task completion.</p>
+        </div>
+        <div class="component-card">
+          <div class="component-card-header"><div class="component-icon">🎯</div><div class="component-card-name">CHARM</div></div>
+          <p class="component-card-desc"><strong>Contrastive Hierarchical Alignment with Reward Marginalization</strong><br/>Decomposes recommendation quality into four reward dimensions with context-dependent meta-learned weights and margin-based preference optimization.</p>
+        </div>
+        <div class="component-card">
+          <div class="component-card-header"><div class="component-icon">🌉</div><div class="component-card-name">BRIDGE</div></div>
+          <p class="component-card-desc"><strong>Cross-Domain Transfer</strong><br/>Adversarial domain adaptation with learnable domain gates — preserves domain-invariant reasoning patterns while retaining domain-specific information.</p>
+        </div>
+        <div class="component-card">
+          <div class="component-card-header"><div class="component-icon">🤝</div><div class="component-card-name">MAVEN</div></div>
+          <p class="component-card-desc"><strong>Multi-Agent Refinement</strong><br/>Three specialized agents (Recommender, Critic, Explainer) collaborate through shared representations with an agreement loss promoting coherent consensus.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Evaluation Metrics -->
+    <div class="card" id="metrics">
+      <span class="section-tag" style="background:linear-gradient(135deg,rgba(96,165,250,.15),rgba(167,139,250,.10));border-color:rgba(96,165,250,.25);">Evaluation Metrics</span>
+      <h2 style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">Evaluation Metrics <span style="padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;background:var(--blue-bg);color:var(--blue);">User-Aligned</span></h2>
+      <p class="muted" style="font-size:.93rem;margin-top:6px;">HARPO introduces a quality-centric evaluation perspective separating user-aligned measures from standard proxy metrics.</p>
+      <div class="metrics-grid">
+        <div class="metric-card pm">
+          <div class="metric-type ua">Primary · User-Aligned</div>
+          <div class="metric-name">User Satisfaction</div>
+          <div class="metric-desc">CHARM reward score for predicted user satisfaction, validated via Pearson correlation with human judgments (r=0.73).</div>
+        </div>
+        <div class="metric-card pm">
+          <div class="metric-type ua">Primary · User-Aligned</div>
+          <div class="metric-name">Engagement</div>
+          <div class="metric-desc">Predicts follow-up rate and continued interaction. Pearson r=0.64 with human follow-up behavior.</div>
+        </div>
+        <div class="metric-card pm">
+          <div class="metric-type ua">Primary · User-Aligned</div>
+          <div class="metric-name">Diversity-adj. Relevance</div>
+          <div class="metric-desc">Combined relevance (CHARM r=0.71) and diversity (r=0.68) reward, measuring breadth alongside precision.</div>
+        </div>
+        <div class="metric-card pm">
+          <div class="metric-type hm">Primary · Human</div>
+          <div class="metric-name">Human Preference</div>
+          <div class="metric-desc">Expert annotator Overall score (1–5 Likert, 200 samples/dataset, Fleiss' κ &gt; 0.72), averaged across Rec.Q and Exp.Q.</div>
+        </div>
+        <div class="metric-card sm">
+          <div class="metric-type">Secondary · Proxy</div>
+          <div class="metric-name">Recall@K</div>
+          <div class="metric-desc">Standard retrieval metric over 100 candidates (99 negatives). Reported for K ∈ {1, 10, 50}.</div>
+        </div>
+        <div class="metric-card sm">
+          <div class="metric-type">Secondary · Proxy</div>
+          <div class="metric-name">NDCG / MRR</div>
+          <div class="metric-desc">Ranking quality metrics at K=10. Reported alongside Recall as complementary proxy signals.</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /left-col -->
+
+  <!-- RIGHT -->
+  <div class="right-col" id="leaderboard">
+
+    <!-- Leaderboard -->
+    <div class="card">
+      <span class="section-tag">Benchmark</span>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+        <h2 style="margin:0;">Leaderboard</h2>
+        <span style="padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700;background:rgba(15,23,42,.07);color:var(--muted);">HARPO Benchmark</span>
+      </div>
+
+      <!-- Dataset tabs -->
+      <div class="lb-dataset-tabs" id="lbDatasetTabs">
+        <div class="lb-ds-tab active" data-ds="redial">ReDial (Movies)</div>
+        <div class="lb-ds-tab" data-ds="inspired">INSPIRED (Movies)</div>
+        <div class="lb-ds-tab" data-ds="muse">MUSE (Fashion)</div>
+      </div>
+
+      <div class="lb-controls">
+        <!-- Type filters + search -->
+        <div class="lb-filter-row">
+          <span class="lb-filter-label">Type:</span>
+          <button class="lb-filter-btn af" data-filter="all"   type="button">All</button>
+          <button class="lb-filter-btn"    data-filter="gpt"   type="button">GPT</button>
+          <button class="lb-filter-btn"    data-filter="open"  type="button">Open-source</button>
+          <button class="lb-filter-btn"    data-filter="agent" type="button">Agent</button>
+          <input class="lb-search" id="lbSearch" type="text" placeholder="Search models…" />
+        </div>
+        <!-- Metric sort tabs -->
+        <div class="lb-metric-row" id="lbMetricTabs">
+          <button class="lb-tab " data-metric="sat"     type="button">Satisfaction ↕</button>
+          <button class="lb-tab " data-metric="eng"     type="button">Engagement ↕</button>
+          <button class="lb-tab " data-metric="ndcg"    type="button">NDCG@10 ↕</button>
+          <button class="lb-tab active" data-metric="overall" type="button">Overall ↓</button>
+        </div>
+      </div>
+
+      <p class="lb-note">Rankings across three datasets on user-aligned metrics. Click any column header to sort. Filter by model type or search by name. Higher is better for all metrics.</p>
+
+      <div class="lb-table-wrap">
+        <table class="lb-table">
+          <thead>
+            <tr>
+              <th style="width:26px">#</th>
+              <th data-col="method">Model</th>
+              <th data-col="sat">Satisfaction ↕</th>
+              <th data-col="eng">Engagement ↕</th>
+              <th data-col="ndcg">Div.-Adj. Relevance ↕</th>
+              <th data-col="hpref">Human Pref. ↕</th>
+              <th data-col="overall" class="sort-desc">Overall Score ↓</th>
+            </tr>
+          </thead>
+          <tbody id="lbBody"></tbody>
+        </table>
+        <div id="lbEmpty" class="lb-empty" style="display:none;">No entries match your filters.</div>
+      </div>
+
+      <p style="font-size:10px;color:var(--muted);margin-top:8px;line-height:1.5;">
+        † Text-only adaptation. ‡ Fine-tuned per Wang et al. 2025. Scores normalized [0,1]. Human Pref. = Table 8 Overall score (1–5, normalized).
+      </p>
+    </div>
+
+    <!-- Submit -->
+    <div class="card">
+      <span class="section-tag">Submit</span>
+      <h2>Submit Your System</h2>
+      <p class="muted" style="font-size:.92rem;margin-top:6px;margin-bottom:12px;line-height:1.6;">Paste your results JSON below. Evaluated against the official HARPO benchmark API at <a href="https://github.com/harpo-bench/harpo" target="_blank">github.com/harpo-bench/harpo</a>.</p>
+      <div class="submit-panel">
+        <h3>📋 Paste Results JSON</h3>
+        <p class="sub">All fields required. Results are verified server-side using the HARPO evaluation API.</p>
+        <textarea class="json-area" id="submitJson" spellcheck="false" placeholder='{
+  "method_name": "MyModel",
+  "team": "My Institution",
+  "dataset": "redial",
+  "predictions": [
+    { "conv_id": "1", "recommended_items": [123, 456, 789] }
+  ],
+  "paper_url": "https://arxiv.org/abs/...",
+  "code_url": "https://github.com/...",
+  "description": "Brief description"
+}'></textarea>
+        <details class="json-schema">
+          <summary>View full JSON schema</summary>
+          <pre>{
+  "method_name": string,
+  "team": string,
+  "dataset": "redial"|"inspired"|"muse",
+  "predictions": [{ "conv_id": string, "recommended_items": number[] }],
+  "paper_url": string | null,
+  "code_url": string | null,
+  "description": string  // ≤ 200 chars
+}</pre>
+        </details>
+        <div class="submit-row">
+          <button class="submit-btn" id="submitBtn" type="button" onclick="handleSubmit()">
+            <svg style="width:14px;height:14px;fill:currentColor" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+            Evaluate &amp; Submit
+          </button>
+          <span class="submit-status" id="submitStatus"></span>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /right-col -->
+</div><!-- /two-col -->
+
+<!-- ═══ BENCHMARK RESULTS (full-width) ═══════════════ -->
+<div class="full-section" id="results">
+  <div class="card">
+    <span class="section-tag">Evaluation</span>
+    <h2>Benchmark Results</h2>
+    <p class="muted" style="font-size:.95rem;margin-top:6px;margin-bottom:20px;">HARPO demonstrates consistent improvements across three conversational recommendation benchmarks (ReDial, INSPIRED, MUSE) with particularly strong gains on user-aligned metrics. All improvements significant at p &lt; 0.01 (paired t-test, Bonferroni correction).</p>
+    <div class="dataset-tabs">
+      <div class="dataset-tab active" onclick="switchDataset('redial',event)">ReDial</div>
+      <div class="dataset-tab" onclick="switchDataset('inspired',event)">INSPIRED</div>
+      <div class="dataset-tab" onclick="switchDataset('muse',event)">MUSE (Multimodal)</div>
+    </div>
+
+    <!-- ReDial – full Table 3 -->
+    <div id="redial-table" class="results-table-wrap">
+      <table class="results-table" id="redial-results">
+        <thead><tr><th onclick="sortTable(event, 1, 'redial-results')">Method</th><th onclick="sortTable(event, 1, 'redial-results')">R@1</th><th onclick="sortTable(event, 2, 'redial-results')">R@10</th><th onclick="sortTable(event, 3, 'redial-results')">R@50</th><th onclick="sortTable(event, 4, 'redial-results')">MRR@10</th><th onclick="sortTable(event, 5, 'redial-results')">NDCG@10</th><th onclick="sortTable(event, 6, 'redial-results')">User Sat.</th><th onclick="sortTable(event, 7, 'redial-results')">Engage.</th></tr></thead>
+        <tbody>
+          <tr><td><span class="model-name-cell">KBRD <span class="model-tag tag-open">Open-source</span></span></td><td>2.9±0.2</td><td>16.7±0.4</td><td>36.2±0.7</td><td>7.4±0.2</td><td>10.2±0.3</td><td>0.42±0.02</td><td>0.38±0.02</td></tr>
+          <tr><td><span class="model-name-cell">KGSF <span class="model-tag tag-open">Open-source</span></span></td><td>3.8±0.2</td><td>18.1±0.5</td><td>37.4±0.7</td><td>8.4±0.3</td><td>11.6±0.4</td><td>0.45±0.02</td><td>0.41±0.02</td></tr>
+          <tr><td><span class="model-name-cell">BARCOR <span class="model-tag tag-open">Open-source</span></span></td><td>3.0±0.2</td><td>16.8±0.4</td><td>36.8±0.6</td><td>7.8±0.2</td><td>10.8±0.3</td><td>0.44±0.02</td><td>0.40±0.02</td></tr>
+          <tr><td><span class="model-name-cell">LLaMA-2-7B <span class="model-tag tag-open">Open-source</span></span></td><td>2.2±0.3</td><td>13.6±0.6</td><td>33.4±0.9</td><td>6.2±0.3</td><td>8.6±0.4</td><td>0.38±0.02</td><td>0.34±0.02</td></tr>
+          <tr><td><span class="model-name-cell">LLaMA-2-13B <span class="model-tag tag-open">Open-source</span></span></td><td>2.8±0.3</td><td>15.4±0.6</td><td>35.6±1.0</td><td>7.2±0.4</td><td>9.9±0.5</td><td>0.43±0.02</td><td>0.39±0.02</td></tr>
+          <tr><td><span class="model-name-cell">UniCRS <span class="model-tag tag-open">Open-source</span></span></td><td>4.8±0.3</td><td>21.2±0.5</td><td>40.8±0.8</td><td>10.1±0.3</td><td>13.8±0.4</td><td>0.51±0.02</td><td>0.47±0.02</td></tr>
+          <tr><td><span class="model-name-cell">DCRS <span class="model-tag tag-agent">Agent</span></span></td><td>7.5±0.3</td><td>25.1±0.6</td><td>43.6±0.9</td><td>12.2±0.4</td><td>15.2±0.5</td><td>0.56±0.02</td><td>0.52±0.02</td></tr>
+          <tr><td><span class="model-name-cell">ChatGPT <span class="model-tag tag-gpt">GPT</span></span></td><td>3.3±0.4</td><td>17.0±0.7</td><td>37.8±1.1</td><td>8.0±0.4</td><td>11.0±0.5</td><td>0.49±0.03</td><td>0.45±0.03</td></tr>
+          <tr><td><span class="model-name-cell">GPT-4 <span class="model-tag tag-gpt">GPT</span></span></td><td>4.5±0.4</td><td>19.4±0.8</td><td>40.2±1.2</td><td>9.6±0.5</td><td>13.2±0.6</td><td>0.55±0.03</td><td>0.51±0.03</td></tr>
+          <tr><td><span class="model-name-cell">RecMind <span class="model-tag tag-agent">Agent</span></span></td><td>5.8±0.3</td><td>22.6±0.6</td><td>42.2±0.9</td><td>11.2±0.4</td><td>15.3±0.5</td><td>0.54±0.02</td><td>0.50±0.02</td></tr>
+          <tr><td><span class="model-name-cell">InteRecAgent <span class="model-tag tag-agent">Agent</span></span></td><td>5.2±0.3</td><td>21.4±0.6</td><td>41.0±0.8</td><td>10.4±0.4</td><td>14.3±0.5</td><td>0.52±0.02</td><td>0.48±0.02</td></tr>
+          <tr class="best"><td><span class="model-name-cell">HARPO <span class="model-tag tag-ours">Ours</span></span></td><td><strong>9.1±0.3</strong></td><td><strong>29.8±0.7</strong></td><td><strong>50.2±1.0</strong></td><td><strong>15.6±0.5</strong></td><td><strong>21.2±0.6</strong></td><td><strong>0.68±0.02</strong></td><td><strong>0.64±0.02</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- INSPIRED -->
+    <div id="inspired-table" class="results-table-wrap" style="display:none">
+      <table class="results-table" id="inspired-results">
+        <thead><tr><th onclick="sortTable(event, 1, 'inspired-results')">Method</th><th onclick="sortTable(event, 1, 'inspired-results')">R@1</th><th onclick="sortTable(event, 2, 'inspired-results')">R@10</th><th onclick="sortTable(event, 3, 'inspired-results')">R@50</th><th onclick="sortTable(event, 4, 'inspired-results')">MRR@10</th><th onclick="sortTable(event, 5, 'inspired-results')">NDCG@10</th><th onclick="sortTable(event, 6, 'inspired-results')">User Sat.</th><th onclick="sortTable(event, 7, 'inspired-results')">Engage.</th></tr></thead>
+        <tbody>
+          <tr><td><span class="model-name-cell">KGSF <span class="model-tag tag-open">Open-source</span></span></td><td>2.4±0.3</td><td>13.8±0.6</td><td>31.6±1.0</td><td>6.4±0.3</td><td>8.8±0.4</td><td>0.40±0.03</td><td>0.36±0.02</td></tr>
+          <tr><td><span class="model-name-cell">UniCRS <span class="model-tag tag-open">Open-source</span></span></td><td>3.8±0.3</td><td>17.6±0.7</td><td>37.2±1.2</td><td>8.6±0.4</td><td>11.8±0.5</td><td>0.48±0.03</td><td>0.44±0.03</td></tr>
+          <tr><td><span class="model-name-cell">GPT-4 <span class="model-tag tag-gpt">GPT</span></span></td><td>4.2±0.5</td><td>18.8±0.9</td><td>39.4±1.5</td><td>9.4±0.5</td><td>12.9±0.6</td><td>0.53±0.03</td><td>0.49±0.03</td></tr>
+          <tr><td><span class="model-name-cell">RecMind <span class="model-tag tag-agent">Agent</span></span></td><td>4.8±0.4</td><td>20.4±0.8</td><td>41.2±1.3</td><td>10.2±0.5</td><td>14.0±0.6</td><td>0.52±0.03</td><td>0.48±0.03</td></tr>
+          <tr class="best"><td><span class="model-name-cell">HARPO <span class="model-tag tag-ours">Ours</span></span></td><td><strong>7.2±0.4</strong></td><td><strong>27.4±0.9</strong></td><td><strong>48.8±1.4</strong></td><td><strong>14.2±0.6</strong></td><td><strong>19.4±0.7</strong></td><td><strong>0.66±0.03</strong></td><td><strong>0.62±0.03</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- MUSE -->
+    <div id="muse-table" class="results-table-wrap" style="display:none">
+      <table class="results-table" id="muse-results">
+        <thead><tr><th onclick="sortTable(event, 1, 'muse-results')">Method</th><th onclick="sortTable(event, 1, 'muse-results')">R@1</th><th onclick="sortTable(event, 2, 'muse-results')">R@10</th><th onclick="sortTable(event, 3, 'muse-results')">R@50</th><th onclick="sortTable(event, 4, 'muse-results')">MRR@10</th><th onclick="sortTable(event, 5, 'muse-results')">NDCG@10</th><th onclick="sortTable(event, 6, 'muse-results')">User Sat.</th><th onclick="sortTable(event, 7, 'muse-results')">Engage.</th></tr></thead>
+        <tbody>
+          <tr><td><span class="model-name-cell">UniCRS† <span class="model-tag tag-open">Open-source</span></span></td><td>1.6±0.3</td><td>11.8±0.6</td><td>27.4±1.1</td><td>5.1±0.3</td><td>7.2±0.4</td><td>0.36±0.03</td><td>0.32±0.02</td></tr>
+          <tr><td><span class="model-name-cell">LLaVA-Next-8B‡ <span class="model-tag tag-open">Open-source</span></span></td><td>5.2±0.4</td><td>25.4±0.7</td><td>44.2±1.2</td><td>12.0±0.4</td><td>16.2±0.5</td><td>0.52±0.03</td><td>0.48±0.03</td></tr>
+          <tr><td><span class="model-name-cell">GPT-4V <span class="model-tag tag-gpt">GPT</span></span></td><td>4.4±0.5</td><td>23.2±0.9</td><td>42.6±1.4</td><td>10.8±0.5</td><td>14.8±0.6</td><td>0.54±0.03</td><td>0.50±0.03</td></tr>
+          <tr><td><span class="model-name-cell">Qwen2-VL-7B‡ <span class="model-tag tag-open">Open-source</span></span></td><td>8.4±0.4</td><td>34.2±0.8</td><td>52.8±1.3</td><td>17.2±0.4</td><td>23.1±0.5</td><td>0.61±0.03</td><td>0.57±0.03</td></tr>
+          <tr class="best"><td><span class="model-name-cell">HARPO <span class="model-tag tag-ours">Ours</span></span></td><td><strong>10.2±0.4</strong></td><td><strong>38.6±0.9</strong></td><td><strong>58.4±1.3</strong></td><td><strong>19.8±0.5</strong></td><td><strong>26.4±0.6</strong></td><td><strong>0.72±0.03</strong></td><td><strong>0.68±0.03</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size:11.5px;color:var(--muted);margin-top:10px;">† Text-only adaptation. ‡ Fine-tuned following Wang et al. (2025).</p>
+  </div>
+</div>
+
+<!-- ═══ CITATION ════════════════════════════════════ -->
+<div class="full-section" id="citation">
+  <div class="card">
+    <span class="section-tag">Citation</span>
+    <h2>Cite This Work</h2>
+    <p class="muted" style="margin-top:6px;margin-bottom:14px;font-size:.95rem;">If you use HARPO or the HARPO evaluation suite, please cite our ACL 2026 paper:</p>
+    <pre class="cite-box"><code id="bibtex">@inproceedings{raj2026harpo,
+  title     = {HARPO: Hierarchical Agentic Reasoning for
+               User-Aligned Conversational Recommendation},
+  author    = {Raj, Subham and Jha, Aman Vaibhav and
+               Anand, Mayank and Saha, Sriparna},
+  booktitle = {Proceedings of the 64th Annual Meeting of the
+               Association for Computational Linguistics (ACL)},
+  year      = {2026}
+}</code></pre>
+    <div class="cite-actions">
+      <button class="btn-copy" type="button" onclick="copyBibtex()">Copy BibTeX</button>
+      <span class="copy-ok" id="copyOk" aria-live="polite"></span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ CLOSING ═════════════════════════════════════ -->
+<div class="closing">
+  <div class="closing-inner">
+    <div style="margin-bottom:24px;">
+      <svg class="icon" style="width:48px;height:48px;opacity:.85" viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.77.6-3.35-1.16-3.35-1.16-.45-1.14-1.1-1.44-1.1-1.44-.9-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.9 1.53 2.36 1.09 2.94.83.09-.65.35-1.09.63-1.34-2.21-.25-4.54-1.1-4.54-4.9 0-1.08.39-1.96 1.03-2.65-.1-.26-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02A9.5 9.5 0 0 1 12 6.8c.85 0 1.71.11 2.51.33 1.9-1.29 2.75-1.02 2.75-1.02.55 1.37.2 2.38.1 2.64.64.69 1.03 1.57 1.03 2.65 0 3.81-2.33 4.65-4.55 4.9.36.31.68.92.68 1.86v2.76c0 .26.18.57.69.48A10 10 0 0 0 12 2z" fill="currentColor"/></svg>
+    </div>
+    <p style="margin:16px 0 24px;font-size:1.15rem;font-weight:700;color:#fff;">Ready to Try HARPO?</p>
+    <a class="arxiv-btn" href="https://github.com/harpo-bench/harpo" target="_blank" rel="noopener">
+      <span>View on GitHub</span>
+      <svg class="icon" style="width:16px;height:16px" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zM7 10h10v2H7z" fill="currentColor"/></svg>
+    </a>
+    <p class="closing-quote">HARPO reframes conversational recommendation as a quality-centric decision-making problem — optimizing for what users actually care about, not just what metrics can measure.</p>
+    <p class="closing-foot">Accepted at ACL 2026 &nbsp;·&nbsp; © 2026 HARPO Authors &nbsp;·&nbsp; IIT Patna · IIIT Allahabad</p>
+  </div>
+</div>
+
+<!-- ═══ JS ════════════════════════════════════════════ -->
+<script>
+/* ── Full leaderboard data from paper (Table 3 + Table 8) ── */
+// hpref = Table 8 Overall / 5 (normalized to [0,1])
+// overall = macro-average of normalized sat, eng, hpref, and ndcg/30
+const LB = {
+  redial: [
+    {method:"HARPO",         team:"IIT Patna / IIIT Allahabad", type:"ours",  sat:.68, eng:.64, ndcg:21.2, hpref:4.01/5, overall:.711},
+    {method:"DCRS",          team:"External",                   type:"agent", sat:.56, eng:.52, ndcg:15.2, hpref:3.43/5, overall:.587},
+    {method:"RecMind",       team:"External",                   type:"agent", sat:.54, eng:.50, ndcg:15.3, hpref:null,   overall:.560},
+    {method:"GPT-4",         team:"OpenAI",                     type:"gpt",   sat:.55, eng:.51, ndcg:13.2, hpref:3.46/5, overall:.568},
+    {method:"InteRecAgent",  team:"External",                   type:"agent", sat:.52, eng:.48, ndcg:14.3, hpref:null,   overall:.551},
+    {method:"UniCRS",        team:"External",                   type:"open",  sat:.51, eng:.47, ndcg:13.8, hpref:3.04/5, overall:.520},
+    {method:"ChatGPT",       team:"OpenAI",                     type:"gpt",   sat:.49, eng:.45, ndcg:11.0, hpref:null,   overall:.512},
+    {method:"KGSF",          team:"External",                   type:"open",  sat:.45, eng:.41, ndcg:11.6, hpref:null,   overall:.463},
+    {method:"BARCOR",        team:"External",                   type:"open",  sat:.44, eng:.40, ndcg:10.8, hpref:null,   overall:.450},
+    {method:"LLaMA-2-13B",   team:"Meta AI",                    type:"open",  sat:.43, eng:.39, ndcg: 9.9, hpref:null,   overall:.438},
+    {method:"KBRD",          team:"External",                   type:"open",  sat:.42, eng:.38, ndcg:10.2, hpref:null,   overall:.433},
+    {method:"LLaMA-2-7B",    team:"Meta AI",                    type:"open",  sat:.38, eng:.34, ndcg: 8.6, hpref:null,   overall:.390},
+  ],
+  inspired: [
+    {method:"HARPO",    team:"IIT Patna / IIIT Allahabad", type:"ours",  sat:.66, eng:.62, ndcg:19.4, hpref:3.90/5, overall:.680},
+    {method:"RecMind",  team:"External",                   type:"agent", sat:.52, eng:.48, ndcg:14.0, hpref:null,   overall:.560},
+    {method:"GPT-4",    team:"OpenAI",                     type:"gpt",   sat:.53, eng:.49, ndcg:12.9, hpref:3.40/5, overall:.558},
+    {method:"UniCRS",   team:"External",                   type:"open",  sat:.48, eng:.44, ndcg:11.8, hpref:2.88/5, overall:.495},
+    {method:"KGSF",     team:"External",                   type:"open",  sat:.40, eng:.36, ndcg: 8.8, hpref:null,   overall:.412},
+  ],
+  muse: [
+    {method:"HARPO",          team:"IIT Patna / IIIT Allahabad", type:"ours",  sat:.72, eng:.68, ndcg:26.4, hpref:4.09/5, overall:.730},
+    {method:"Qwen2-VL-7B‡",   team:"Alibaba",                    type:"open",  sat:.61, eng:.57, ndcg:23.1, hpref:3.58/5, overall:.624},
+    {method:"GPT-4V",          team:"OpenAI",                     type:"gpt",   sat:.54, eng:.50, ndcg:14.8, hpref:3.46/5, overall:.567},
+    {method:"LLaVA-Next-8B‡",  team:"LLaVA Team",                type:"open",  sat:.52, eng:.48, ndcg:16.2, hpref:null,   overall:.545},
+    {method:"UniCRS†",         team:"External",                   type:"open",  sat:.36, eng:.32, ndcg: 7.2, hpref:null,   overall:.370},
+  ]
+};
+
+let lbDS="redial", lbFilter="all", lbSort="overall", lbDir=-1, lbQ="";
+
+function userEntries(){try{return JSON.parse(localStorage.getItem("harpo_subs")||"[]")}catch{return[]}}
+function saveEntry(e){try{const a=userEntries();a.unshift(e);localStorage.setItem("harpo_subs",JSON.stringify(a.slice(0,50)))}catch{}}
+
+function getRows(){
+  const base=LB[lbDS]||[];
+  const extra=userEntries().filter(e=>e.dataset===lbDS);
+  return[...base,...extra];
+}
+
+function bar(v,max,cls){
+  if(v==null)return"—";
+  const w=Math.round((v/max)*75);
+  return`<div class="bar-wrap"><div class="bar ${cls}" style="width:${w}px"></div><span class="lb-val">${cls==="n"?v.toFixed(1):v.toFixed(2)}</span></div>`;
+}
+
+function renderLB(){
+  let rows=getRows();
+  if(lbFilter!=="all")rows=rows.filter(r=>r.type===lbFilter||r.type==="ours"&&lbFilter==="ours");
+  if(lbQ){const q=lbQ.toLowerCase();rows=rows.filter(r=>r.method.toLowerCase().includes(q)||(r.team||"").toLowerCase().includes(q));}
+  rows.sort((a,b)=>{let av=a[lbSort]??-Infinity,bv=b[lbSort]??-Infinity;return lbDir*(bv-av);});
+  const body=document.getElementById("lbBody"),empty=document.getElementById("lbEmpty");
+  if(!rows.length){body.innerHTML="";empty.style.display="";return;}
+  empty.style.display="none";
+  const medals=["🥇","🥈","🥉"];
+  body.innerHTML=rows.map((r,i)=>{
+    const rn=i+1,gold=r.type==="ours";
+    const rl=rn<=3?medals[i]:rn,rc=rn<=3?`lr${rn}`:"";
+    const ot=r.type==="ours"?`<span style="margin-left:4px;padding:1px 5px;border-radius:999px;font-size:9px;font-weight:700;background:#dbeafe;color:#2563eb;">Ours</span>`:"";
+    const tt=r.type==="gpt"?`<span style="padding:1px 5px;border-radius:999px;font-size:9px;font-weight:700;background:var(--green-bg);color:var(--green);">GPT</span>`:
+             r.type==="agent"?`<span style="padding:1px 5px;border-radius:999px;font-size:9px;font-weight:700;background:var(--amber-bg);color:var(--amber);">Agent</span>`:
+             r.type==="open"?`<span style="padding:1px 5px;border-radius:999px;font-size:9px;font-weight:700;background:var(--purple-bg);color:var(--purple);">Open-source</span>`:
+             r.userSubmit?`<span style="padding:1px 5px;border-radius:999px;font-size:9px;font-weight:700;background:var(--green-bg);color:var(--green);">Submitted</span>`:"";
+    const ov=r.overall!=null?`<span class="lb-ov">${r.overall.toFixed(3)}</span>`:`<span style="color:var(--muted);font-size:11px;">pending</span>`;
+    const hv=r.hpref!=null?bar(r.hpref,1,"h"):"—";
+    return`<tr${gold?' class="lb-gold"':""}>
+      <td><span class="lb-rank ${rc}">${rl}</span></td>
+      <td><div class="lb-method">${r.method}${ot} ${tt}</div><div class="lb-team">${r.team||""}</div></td>
+      <td>${bar(r.sat,1,"s")}</td>
+      <td>${bar(r.eng,1,"e")}</td>
+      <td>${bar(r.ndcg,30,"n")}</td>
+      <td>${hv}</td>
+      <td style="text-align:right">${ov}</td>
+    </tr>`;
+  }).join("");
+  // header sort indicators
+  document.querySelectorAll(".lb-table thead th[data-col]").forEach(th=>{
+    th.classList.remove("sort-asc","sort-desc");
+    if(th.dataset.col===lbSort)th.classList.add(lbDir===-1?"sort-desc":"sort-asc");
+  });
+}
+
+// Dataset tabs
+document.querySelectorAll(".lb-ds-tab").forEach(t=>t.addEventListener("click",()=>{
+  document.querySelectorAll(".lb-ds-tab").forEach(x=>x.classList.remove("active"));
+  t.classList.add("active"); lbDS=t.dataset.ds; renderLB();
+}));
+
+// Type filters
+document.querySelectorAll(".lb-filter-btn").forEach(btn=>btn.addEventListener("click",()=>{
+  lbFilter=btn.dataset.filter;
+  document.querySelectorAll(".lb-filter-btn").forEach(b=>{
+    b.className="lb-filter-btn";
+    if(b.dataset.filter===lbFilter){
+      b.classList.add(lbFilter==="all"?"af":lbFilter==="gpt"?"gf":lbFilter==="open"?"of":"ag");
+    }
+  });
+  renderLB();
+}));
+
+// Metric tabs
+document.querySelectorAll("#lbMetricTabs .lb-tab").forEach(btn=>btn.addEventListener("click",()=>{
+  const m=btn.dataset.metric;
+  if(lbSort===m)lbDir*=-1; else{lbSort=m;lbDir=-1;}
+  document.querySelectorAll("#lbMetricTabs .lb-tab").forEach(b=>b.classList.toggle("active",b.dataset.metric===lbSort));
+  renderLB();
+}));
+
+// Column header sort
+document.querySelectorAll(".lb-table thead th[data-col]").forEach(th=>th.addEventListener("click",()=>{
+  const c=th.dataset.col; if(c==="method")return;
+  if(lbSort===c)lbDir*=-1; else{lbSort=c;lbDir=-1;}
+  document.querySelectorAll("#lbMetricTabs .lb-tab").forEach(b=>b.classList.toggle("active",b.dataset.metric===lbSort));
+  renderLB();
+}));
+
+// Search
+document.getElementById("lbSearch").addEventListener("input",e=>{lbQ=e.target.value;renderLB();});
+
+renderLB();
+
+/* ── Dataset tab switching (results) ── */
+function switchDataset(ds,ev){
+  ["redial","inspired","muse"].forEach(d=>document.getElementById(d+"-table").style.display="none");
+  document.getElementById(ds+"-table").style.display="";
+  document.querySelectorAll(".dataset-tab").forEach(t=>t.classList.remove("active"));
+  if(ev&&ev.target)ev.target.classList.add("active");
+}
+
+/* ── Submit ── */
+async function handleSubmit(){
+  const raw=document.getElementById("submitJson").value.trim();
+  const btn=document.getElementById("submitBtn");
+  if(!raw){showStatus("error","Please paste your results JSON first.");return;}
+  let p;try{p=JSON.parse(raw);}catch{showStatus("error","Invalid JSON — check syntax.");return;}
+  const miss=["method_name","team","dataset","predictions"].filter(f=>!p[f]);
+  if(miss.length){showStatus("error","Missing: "+miss.join(", "));return;}
+  if(!Array.isArray(p.predictions)||!p.predictions.length){showStatus("error","predictions must be a non-empty array.");return;}
+  if(!["redial","inspired","muse"].includes(p.dataset)){showStatus("error",'dataset must be "redial", "inspired", or "muse".');return;}
+  btn.disabled=true; showStatus("loading","⏳ Submitting to evaluation API…");
+  try{
+    const ib=[`**Method:** ${p.method_name}`,`**Team:** ${p.team}`,`**Dataset:** ${p.dataset}`,`**Paper:** ${p.paper_url||"N/A"}`,`**Code:** ${p.code_url||"N/A"}`,`**Description:** ${p.description||""}`,``,`\`\`\`json`,JSON.stringify({predictions:p.predictions.slice(0,3)},null,2),"...",`\`\`\``,`*hash:${await h256(raw)} · via HARPO project page*`].join("\n");
+    const res=await fetch("https://api.github.com/repos/harpo-bench/harpo/issues",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/vnd.github+json"},body:JSON.stringify({title:`[Submission] ${p.method_name} — ${p.dataset} — ${new Date().toISOString().slice(0,10)}`,body:ib,labels:["submission","auto-eval"]})});
+    if(res.status===201){
+      const iss=await res.json();
+      saveEntry({method:p.method_name,team:p.team,type:"submitted",dataset:p.dataset,sat:null,eng:null,ndcg:null,hpref:null,overall:null,userSubmit:true});
+      showStatus("success",`✅ Submitted! Track: <a href="${iss.html_url}" target="_blank">Issue #${iss.number}</a>`);
+      document.getElementById("submitJson").value="";
+      setTimeout(()=>renderLB(),400);
+    } else if(res.status===401||res.status===403){fb(p);}
+    else{const e=await res.json().catch(()=>({}));throw new Error(e.message||`HTTP ${res.status}`);}
+  }catch(e){
+    if(/401|403|fetch/.test(String(e.message)))fb(p);
+    else showStatus("error",`Failed: ${e.message}`);
+  }finally{btn.disabled=false;}
+}
+function fb(p){
+  const t=encodeURIComponent(`[Submission] ${p.method_name} — ${p.dataset}`);
+  const b=encodeURIComponent(`**Method:** ${p.method_name}\n**Team:** ${p.team}\n**Dataset:** ${p.dataset}\n**Paper:** ${p.paper_url||"N/A"}\n**Code:** ${p.code_url||"N/A"}`);
+  window.open(`https://github.com/harpo-bench/harpo/issues/new?title=${t}&body=${b}&labels=submission,auto-eval`,"_blank");
+  showStatus("success","✅ GitHub opened — paste your predictions to complete submission.");
+}
+function showStatus(t,h){const e=document.getElementById("submitStatus");e.className=`submit-status ${t}`;e.innerHTML=h;}
+async function h256(txt){
+  if(!crypto.subtle)return"n/a";
+  const buf=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(txt));
+  return Array.from(new Uint8Array(buf)).slice(0,4).map(b=>b.toString(16).padStart(2,"0")).join("");
+}
+
+/* ── BibTeX ── */
+function copyBibtex(){
+  navigator.clipboard.writeText(document.getElementById("bibtex").textContent).then(()=>{
+    const ok=document.getElementById("copyOk");ok.textContent="✓ Copied!";setTimeout(()=>ok.textContent="",1400);
+  });
+}
+
+/* ── Scroll spy ── */
+const sids=["overview","framework","metrics","results","leaderboard","citation"];
+window.addEventListener("scroll",()=>{
+  const y=window.scrollY+130;let cur=sids[0];
+  sids.forEach(id=>{const el=document.getElementById(id);if(el&&el.getBoundingClientRect().top+window.scrollY<=y)cur=id;});
+  document.querySelectorAll("nav a[href^='#']").forEach(a=>a.classList.toggle("active",a.getAttribute("href")==="#"+cur));
+},{passive:true});
+</script>
+</body>
+</html>
